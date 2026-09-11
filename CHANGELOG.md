@@ -49,6 +49,22 @@ All notable changes to **Price Scout** are documented here.
 
 - Check only open PRs for changelog updates by @purvanshjoshi
 
+- Persist seller stock and sku in price history by @siddhantsoni224143-ops
+
+- Align price history schema with product model by @siddhantsoni224143-ops
+
+- Keep initial migration backward compatible by @siddhantsoni224143-ops
+
+- Connect history API to saved price history table by @siddhantsoni224143-ops
+
+- Run all marketplace scrapers concurrently and preserve equal prices by @siddhantsoni224143-ops
+
+- Use local Price Scout API for extension searches by @siddhantsoni224143-ops
+
+- Harden extension rendering against injected product data by @siddhantsoni224143-ops
+
+- Harden popup rendering and links by @siddhantsoni224143-ops
+
 
 ### Build System
 
@@ -299,6 +315,8 @@ All notable changes to **Price Scout** are documented here.
 
 - Update changelog by @github-actions[bot]
 
+- Update changelog by @github-actions[bot]
+
 
 ### Continuous Integration
 
@@ -389,6 +407,12 @@ All notable changes to **Price Scout** are documented here.
 - Add auto-changelog generation with git-cliff by @purvanshjoshi
 
 - Auto-generate CHANGELOG.md after every PR merge by @purvanshjoshi
+
+- Add seller stock and sku to product model by @siddhantsoni224143-ops
+
+- Migrate existing price history with product metadata by @siddhantsoni224143-ops
+
+- Connect extension to local Price Scout engine by @siddhantsoni224143-ops
 
 
 ### Tests
