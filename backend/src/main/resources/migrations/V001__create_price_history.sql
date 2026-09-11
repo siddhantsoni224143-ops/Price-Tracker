@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS price_history (
     platform TEXT NOT NULL,
     price REAL NOT NULL,
     url TEXT,
+    seller TEXT DEFAULT 'Unknown',
+    stock TEXT DEFAULT 'Unknown',
+    sku TEXT DEFAULT '',
     scraped_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
