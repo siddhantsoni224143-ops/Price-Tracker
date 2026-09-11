@@ -17,64 +17,41 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class EngineManager {
+    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private final DatabaseManager databaseManager = new DatabaseManager();
 
-    private final ExecutorService executorService;
-    private final DatabaseManager databaseManager;
-
-    public EngineManager() {
-        // Create a fixed thread pool to run scrapers concurrently
-        this.executorService = Executors.newFixedThreadPool(3);
-        this.databaseManager = new DatabaseManager();
-    }
-
-    /**
-     * Executes the scrapers concurrently, sorts the results, saves them, and returns them.
-     */
     public TreeMap<Double, Product> executeSearch(String searchKeyword) {
-        
-        // A TreeMap automatically sorts its keys natively in Java. 
-        // We use Price as the Key so the cheapest product is always first!
         TreeMap<Double, Product> sortedResults = new TreeMap<>();
+        List<Callable<Product>> tasks = List.of(
+            new AmazonScraper(searchKeyword),
+            new FlipkartScraper(searchKeyword),
+            new RelianceScraper(searchKeyword),
+            new CromaScraper(searchKeyword)
+        );
 
         try {
-            // 1. Prepare Scraper tasks
-            Callable<Product> amazonTask = new AmazonScraper(searchKeyword);
-            Callable<Product> flipkartTask = new FlipkartScraper(searchKeyword);
-            Callable<Product> relianceTask = new RelianceScraper(searchKeyword);
-            Callable<Product> cromaTask = new CromaScraper(searchKeyword);
-
-            // 2. Submit tasks to the Executor (they start running simultaneously right now!)
             List<Future<Product>> futures = new ArrayList<>();
-            futures.add(executorService.submit(amazonTask));
-            futures.add(executorService.submit(flipkartTask));
-            futures.add(executorService.submit(relianceTask));
-            futures.add(executorService.submit(cromaTask));
-            
-            // 3. Wait for the threads to finish and collect results
+            for (Callable<Product> task : tasks) futures.add(executorService.submit(task));
+
             for (Future<Product> future : futures) {
                 try {
-                    // .get() will block until this specific thread is finished finding the price
                     Product result = future.get();
-                    
-                    // We only want valid products (ignore errors marked as Double.MAX_VALUE)
-                    if (result != null && result.getPrice() < Double.MAX_VALUE) {
-                        
-                        // Insert the product into the TreeMap to automatically sort it
-                        sortedResults.put(result.getPrice(), result);
-                        
-                        // Save the permanent history directly to the MySQL database!
-                        databaseManager.savePriceHistory(result); 
+                    if (result != null && Double.isFinite(result.getPrice()) && result.getPrice() < Double.MAX_VALUE) {
+                        double key = result.getPrice();
+                        while (sortedResults.containsKey(key)) key = Math.nextUp(key);
+                        sortedResults.put(key, result);
+                        databaseManager.savePriceHistory(result);
                     }
-                } catch (InterruptedException | ExecutionException e) {
-                    System.err.println("Error retrieving scraper result: " + e.getMessage());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Scraper interrupted: " + e.getMessage());
+                } catch (ExecutionException e) {
+                    System.err.println("Scraper failed: " + e.getCause());
                 }
             }
-        } finally {
-             // In a normal application we would shutdown the executor, 
-             // but since this engine is meant to stay alive for Chrome Native Messaging, 
-             // we keep it open for future requests.
+        } catch (Exception e) {
+            System.err.println("Search engine error: " + e.getMessage());
         }
-
         return sortedResults;
     }
 }
